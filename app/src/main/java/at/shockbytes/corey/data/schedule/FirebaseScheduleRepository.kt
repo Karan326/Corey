@@ -4,6 +4,8 @@ import android.content.Context
 import at.shockbytes.core.scheduler.SchedulerFacade
 import at.shockbytes.corey.R
 import at.shockbytes.corey.common.core.workout.model.WorkoutIconType
+import at.shockbytes.corey.data.schedule.model.ScheduleDay
+import at.shockbytes.corey.data.schedule.model.ScheduleDayItem
 import at.shockbytes.corey.data.workout.WorkoutRepository
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
@@ -33,10 +35,10 @@ class FirebaseScheduleRepository(
         setupFirebase()
     }
 
-    private val scheduleItems: MutableList<ScheduleItem> = mutableListOf()
+    private val scheduleItemSubject = BehaviorSubject.create<List<ScheduleDay>>()
+    private val scheduleItems: MutableList<ScheduleDay> = mutableListOf()
 
-    private val scheduleItemSubject = BehaviorSubject.create<List<ScheduleItem>>()
-    override val schedule: Observable<List<ScheduleItem>> = scheduleItemSubject
+    override val schedule: Observable<List<ScheduleDay>> = scheduleItemSubject
 
     override val schedulableItems: Observable<List<SchedulableItem>>
         get() = workoutManager.workouts
@@ -63,25 +65,62 @@ class FirebaseScheduleRepository(
 
     override fun poke() = Unit
 
-    override fun insertScheduleItem(item: ScheduleItem): ScheduleItem {
-        val ref = firebase.getReference("/schedule").push()
-        val updated = item.copy(id = ref.key ?: "")
-        ref.setValue(updated)
+    override fun insertScheduleItemAtDay(dayItem: ScheduleDayItem, day: Int): ScheduleDay {
+        return if (areItemsScheduledForDay(day)) {
+            updateScheduleDayWithItem(dayItem, day)
+        } else {
+            createNewScheduleDay(dayItem, day)
+        }
+    }
+
+    private fun updateScheduleDayWithItem(dayItem: ScheduleDayItem, day: Int): ScheduleDay {
+        val scheduleDay = getItemForDay(day)
+            ?: createNewScheduleDay(dayItem, day) // Fallback to new instantiation, should never happen
+
+        val updatedItems = scheduleDay.items.toMutableList()
+            .apply {
+                add(dayItem)
+            }
+            .toList()
+
+        val updated = scheduleDay.copy(items = updatedItems)
+        updateScheduleDay(updated)
         return updated
     }
 
-    override fun updateScheduleItem(item: ScheduleItem) {
-        firebase.getReference("/schedule").child(item.id).setValue(item)
+    private fun createNewScheduleDay(dayItem: ScheduleDayItem, day: Int): ScheduleDay {
+        val ref = firebase.getReference(PATH_SCHEDULE).push()
+
+        val scheduleDay = ScheduleDay(
+            id = ref.key ?: "",
+            day = day,
+            items = listOf(dayItem)
+        )
+
+        ref.setValue(scheduleDay)
+        return scheduleDay
     }
 
-    override fun deleteScheduleDay(item: ScheduleItem) {
-        firebase.getReference("/schedule").child(item.id).removeValue()
+    private fun areItemsScheduledForDay(day: Int): Boolean {
+        return scheduleItems.any { it.day == day }
+    }
+
+    private fun getItemForDay(day: Int): ScheduleDay? {
+        return scheduleItems.find { it.day == day }
+    }
+
+    override fun updateScheduleDay(scheduleDay: ScheduleDay){
+        firebase.getReference(PATH_SCHEDULE).child(scheduleDay.id).setValue(scheduleDay)
+    }
+
+    override fun deleteScheduleDay(scheduleDay: ScheduleDay) {
+        firebase.getReference(PATH_SCHEDULE).child(scheduleDay.id).removeValue()
     }
 
     override fun deleteAll(): Completable {
         return Completable
                 .create { emitter ->
-                    firebase.getReference("/schedule").removeValue()
+                    firebase.getReference(PATH_SCHEDULE).removeValue()
                             .addOnCompleteListener { emitter.onComplete() }
                             .addOnFailureListener { throwable -> emitter.onError(throwable) }
                 }
@@ -90,23 +129,25 @@ class FirebaseScheduleRepository(
 
     private fun setupFirebase() {
 
-        firebase.getReference("/schedule").addChildEventListener(object : ChildEventListener {
+        firebase.getReference(PATH_SCHEDULE).addChildEventListener(object : ChildEventListener {
             override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
-                dataSnapshot.getValue(ScheduleItem::class.java)?.let { item ->
+                dataSnapshot.getValue(ScheduleDay::class.java)?.let { item ->
                     scheduleItems.add(item)
                     scheduleItemSubject.onNext(scheduleItems)
                 }
             }
 
             override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
-                dataSnapshot.getValue(ScheduleItem::class.java)?.let { changed ->
-                    scheduleItems[scheduleItems.indexOf(changed)] = changed
+                dataSnapshot.getValue(ScheduleDay::class.java)?.let { changed ->
+
+                    val indexOfChanged = scheduleItems.indexOf(changed)
+                    scheduleItems[indexOfChanged] = changed
                     scheduleItemSubject.onNext(scheduleItems)
                 }
             }
 
             override fun onChildRemoved(dataSnapshot: DataSnapshot) {
-                dataSnapshot.getValue(ScheduleItem::class.java)?.let { removed ->
+                dataSnapshot.getValue(ScheduleDay::class.java)?.let { removed ->
                     scheduleItems.remove(removed)
                     scheduleItemSubject.onNext(scheduleItems)
                 }
@@ -118,5 +159,10 @@ class FirebaseScheduleRepository(
 
             override fun onCancelled(databaseError: DatabaseError) = Unit
         })
+    }
+
+    companion object {
+
+        private const val PATH_SCHEDULE = "/schedule2"
     }
 }

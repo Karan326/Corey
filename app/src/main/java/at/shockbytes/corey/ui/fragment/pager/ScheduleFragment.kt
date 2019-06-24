@@ -4,6 +4,9 @@ import android.content.res.Configuration
 import android.os.Bundle
 import androidx.recyclerview.widget.ItemTouchHelper
 import android.widget.Toast
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import at.shockbytes.core.scheduler.SchedulerFacade
 import at.shockbytes.core.ui.fragment.BaseFragment
 import at.shockbytes.corey.R
@@ -12,8 +15,9 @@ import at.shockbytes.corey.ui.adapter.ScheduleAdapter
 import at.shockbytes.corey.common.addTo
 import at.shockbytes.corey.common.core.util.CoreySettings
 import at.shockbytes.corey.dagger.AppComponent
-import at.shockbytes.corey.data.schedule.ScheduleItem
 import at.shockbytes.corey.data.schedule.ScheduleRepository
+import at.shockbytes.corey.data.schedule.model.ScheduleDay
+import at.shockbytes.corey.data.schedule.model.ScheduleDayItem
 import at.shockbytes.corey.data.schedule.weather.ScheduleWeatherResolver
 import at.shockbytes.corey.ui.fragment.dialog.InsertScheduleDialogFragment
 import at.shockbytes.util.AppUtils
@@ -29,7 +33,7 @@ import javax.inject.Inject
  * Author:  Martin Macheiner
  * Date:    26.10.2015
  */
-class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveListener<ScheduleItem> {
+class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveListener<ScheduleDay> {
 
     override val snackBarBackgroundColorRes: Int = R.color.sb_background
     override val snackBarForegroundColorRes: Int = R.color.sb_foreground
@@ -49,7 +53,7 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
     private lateinit var touchHelper: ItemTouchHelper
     private val adapter: ScheduleAdapter by lazy {
         ScheduleAdapter(
-                context!!,
+                requireContext(),
                 { item, _, position -> onScheduleItemClicked(item, position) },
                 { item, position -> onItemDismissed(item, position) },
                 weatherResolver,
@@ -58,19 +62,19 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
         )
     }
 
-    private val recyclerView: androidx.recyclerview.widget.RecyclerView by bindView(R.id.fragment_schedule_rv)
-    private val recyclerViewDays: androidx.recyclerview.widget.RecyclerView by bindView(R.id.fragment_schedule_rv_days)
+    private val recyclerView: RecyclerView by bindView(R.id.fragment_schedule_rv)
+    private val recyclerViewDays: RecyclerView by bindView(R.id.fragment_schedule_rv_days)
 
-    private val recyclerViewLayoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager
+    private val recyclerViewLayoutManager: RecyclerView.LayoutManager
         get() = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            androidx.recyclerview.widget.LinearLayoutManager(context, androidx.recyclerview.widget.LinearLayoutManager.VERTICAL, false)
+            LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         } else {
-            androidx.recyclerview.widget.GridLayoutManager(context, ScheduleAdapter.MAX_SCHEDULES)
+            GridLayoutManager(context, ScheduleAdapter.MAX_SCHEDULES)
         }
 
     override val layoutId = R.layout.fragment_schedule
 
-    override fun onItemMove(t: ScheduleItem, from: Int, to: Int) = Unit
+    override fun onItemMove(t: ScheduleDay, from: Int, to: Int) = Unit
 
     override fun onItemMoveFinished() {
         adapter.reorderAfterMove()
@@ -79,7 +83,7 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
                 }
     }
 
-    override fun onItemDismissed(t: ScheduleItem, position: Int) {
+    override fun onItemDismissed(t: ScheduleDay, position: Int) {
         if (!t.isEmpty) {
             scheduleRepository.deleteScheduleDay(t)
         }
@@ -125,20 +129,18 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
         appComponent?.inject(this)
     }
 
-    private fun onScheduleItemClicked(item: ScheduleItem, position: Int) {
-        if (item.isEmpty) {
-            InsertScheduleDialogFragment.newInstance()
-                    .setOnScheduleItemSelectedListener { i ->
-                        scheduleRepository.insertScheduleItemAtDay(
-                            ScheduleItem(i.item.title,
-                                position,
-                                locationType = i.item.locationType,
-                                workoutIconType = i.item.workoutType
-                            )
-                        )
-                    }
-                    .show(childFragmentManager, "dialogfragment-insert-schedule")
-        }
+    private fun onScheduleItemClicked(item: ScheduleDay, position: Int) {
+        InsertScheduleDialogFragment.newInstance()
+                .setOnScheduleItemSelectedListener { i ->
+                    scheduleRepository.insertScheduleItemAtDay(
+                        ScheduleDayItem(i.item.title,
+                            locationType = i.item.locationType,
+                            workoutIconType = i.item.workoutType
+                        ),
+                        day = position
+                    )
+                }
+                .show(childFragmentManager, "dialogfragment-insert-schedule")
     }
 
     companion object {

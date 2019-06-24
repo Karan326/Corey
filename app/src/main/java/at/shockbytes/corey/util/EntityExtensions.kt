@@ -1,7 +1,7 @@
 package at.shockbytes.corey.util
 
-import at.shockbytes.corey.data.schedule.ScheduleItem
+import at.shockbytes.corey.data.schedule.model.ScheduleDay
 
-fun ScheduleItem.isItemOfCurrentDay(currentDay: Int): Boolean {
+fun ScheduleDay.isItemOfCurrentDay(currentDay: Int): Boolean {
     return day == currentDay && !isEmpty
 }

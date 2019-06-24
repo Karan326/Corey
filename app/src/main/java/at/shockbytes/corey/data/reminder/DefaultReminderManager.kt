@@ -14,8 +14,8 @@ import at.shockbytes.corey.data.body.BodyRepository
 import at.shockbytes.corey.data.body.info.BodyInfo
 import at.shockbytes.corey.data.reminder.worker.WeighNotificationWorker
 import at.shockbytes.corey.data.reminder.worker.WorkoutNotificationWorker
-import at.shockbytes.corey.data.schedule.ScheduleItem
 import at.shockbytes.corey.data.schedule.ScheduleRepository
+import at.shockbytes.corey.data.schedule.model.ScheduleDay
 import at.shockbytes.corey.storage.KeyValueStorage
 import at.shockbytes.corey.util.isItemOfCurrentDay
 import io.reactivex.Single
@@ -117,7 +117,7 @@ class DefaultReminderManager(
             .build()
     }
 
-    override fun postWorkoutNotification(context: Context): Single<ScheduleItem> {
+    override fun postWorkoutNotification(context: Context): Single<ScheduleDay> {
         return scheduleRepository.schedule
             .flatMapIterable { it }
             .filter { item ->
@@ -152,12 +152,12 @@ class DefaultReminderManager(
         return isWeighReminderEnabled && CoreyUtils.getDayOfWeek() == dayOfWeighReminder
     }
 
-    private fun postWorkoutNotificationForToday(context: Context, item: ScheduleItem) {
+    private fun postWorkoutNotificationForToday(context: Context, item: ScheduleDay) {
 
         val notification = ReminderNotificationBuilder.buildWorkoutNotification(
             context,
             item.name,
-            item.workoutIconType
+            item.notificationWorkoutIcon
         )
 
         getNotificationManager(context).run {

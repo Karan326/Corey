@@ -2,7 +2,7 @@ package at.shockbytes.corey.data.reminder
 
 import android.content.Context
 import at.shockbytes.corey.data.body.info.BodyInfo
-import at.shockbytes.corey.data.schedule.ScheduleItem
+import at.shockbytes.corey.data.schedule.model.ScheduleDay
 import io.reactivex.Single
 
 interface ReminderManager {
@@ -21,7 +21,7 @@ interface ReminderManager {
 
     fun postWeighNotification(context: Context): Single<BodyInfo>
 
-    fun postWorkoutNotification(context: Context): Single<ScheduleItem>
+    fun postWorkoutNotification(context: Context): Single<ScheduleDay>
 
     fun shouldScheduleWeighReminder(): Boolean
 }
