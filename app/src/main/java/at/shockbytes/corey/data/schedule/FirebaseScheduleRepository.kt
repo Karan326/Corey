@@ -109,7 +109,7 @@ class FirebaseScheduleRepository(
         return scheduleItems.find { it.day == day }
     }
 
-    override fun updateScheduleDay(scheduleDay: ScheduleDay){
+    override fun updateScheduleDay(scheduleDay: ScheduleDay) {
         firebase.getReference(PATH_SCHEDULE).child(scheduleDay.id).setValue(scheduleDay)
     }
 

@@ -28,5 +28,4 @@ data class ScheduleDay(
     @get:Exclude
     val itemSize: Int
         get() = items.size
-
 }
