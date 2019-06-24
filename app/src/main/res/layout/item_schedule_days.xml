@@ -17,7 +17,7 @@
         android:padding="12dp"
         android:textAllCaps="true"
         android:textColor="@android:color/white"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textStyle="bold" />
 
 </androidx.cardview.widget.CardView>

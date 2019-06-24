@@ -7,15 +7,19 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
 import at.shockbytes.core.scheduler.SchedulerFacade
 import at.shockbytes.corey.R
 import at.shockbytes.corey.common.addTo
 import at.shockbytes.corey.common.core.util.CoreySettings
 import at.shockbytes.corey.common.core.workout.model.LocationType
+import at.shockbytes.corey.common.core.workout.model.WorkoutIconType
 import at.shockbytes.corey.common.setVisible
 import at.shockbytes.corey.data.schedule.model.ScheduleDay
 import at.shockbytes.corey.data.schedule.weather.ScheduleWeatherResolver
 import at.shockbytes.corey.util.ScheduleItemDiffUtilCallback
+import at.shockbytes.util.AppUtils
 import at.shockbytes.util.adapter.BaseAdapter
 import at.shockbytes.util.adapter.ItemTouchHelperAdapter
 import io.reactivex.disposables.CompositeDisposable
@@ -30,8 +34,8 @@ import java.util.Collections
  */
 class ScheduleAdapter(
     context: Context,
-    private val onItemClickedListener: ((item: ScheduleDay, v: View, position: Int) -> Unit),
-    private val onItemDismissedListener: ((item: ScheduleDay, position: Int) -> Unit),
+    private val onItemClickedListener: ((item: ScheduleDay, v: View) -> Unit),
+    private val onItemDismissedListener: ((item: ScheduleDay) -> Unit),
     private val weatherResolver: ScheduleWeatherResolver,
     private val schedulers: SchedulerFacade,
     private val coreySettings: CoreySettings
@@ -196,14 +200,13 @@ class ScheduleAdapter(
     ) : BaseAdapter<ScheduleDay>.ViewHolder(containerView), LayoutContainer {
 
         private lateinit var item: ScheduleDay
-        private var itemPosition: Int = 0
 
         init {
             item_schedule_txt_name.setOnClickListener {
-                onItemClickedListener.invoke(item, itemView, itemPosition)
+                onItemClickedListener.invoke(item, itemView)
             }
             item_schedule_btn_clear.setOnClickListener {
-                onItemDismissedListener.invoke(item, itemPosition)
+                onItemDismissedListener.invoke(item)
             }
         }
 
@@ -211,20 +214,40 @@ class ScheduleAdapter(
 
         fun bind(item: ScheduleDay, position: Int) {
             this.item = item
-            itemPosition = position
             item_schedule_txt_name.text = item.name
 
             if (shouldLoadWeather(item)) {
                 loadWeather(position)
             }
 
-            item_schedule_iv_icon.apply {
-                /* TODO Merge multiple icons together
-                setImageResource((item.workoutIconType.iconRes ?: 0))
-                item.workoutIconType.iconTint?.let { tintColor ->
+            setIcons(item.icons)
+        }
+
+        private fun setIcons(icons: List<WorkoutIconType>) {
+            item_schedule_icon_container.removeAllViews()
+
+            icons
+                .mapIndexed { index, workoutIconType ->
+                    mapWorkoutIconToImageView(index, workoutIconType)
+                }
+                .forEach { imgView ->
+                    item_schedule_icon_container.addView(imgView)
+                }
+        }
+
+        private fun mapWorkoutIconToImageView(index: Int, workoutIconType: WorkoutIconType): ImageView {
+            return ImageView(context).apply {
+                layoutParams = ViewGroup.MarginLayoutParams(
+                    AppUtils.convertDpInPixel(ICON_WIDTH, context),
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginStart = index * AppUtils.convertDpInPixel(ICON_START_MARGIN, context)
+                }
+
+                setImageResource((workoutIconType.iconRes ?: 0))
+                workoutIconType.iconTint?.let { tintColor ->
                     imageTintList = ColorStateList.valueOf(ContextCompat.getColor(context, tintColor))
                 }
-                */
             }
         }
 
@@ -251,5 +274,8 @@ class ScheduleAdapter(
 
     companion object {
         const val MAX_SCHEDULES = 7
+
+        private const val ICON_WIDTH = 18
+        private const val ICON_START_MARGIN = 12
     }
 }

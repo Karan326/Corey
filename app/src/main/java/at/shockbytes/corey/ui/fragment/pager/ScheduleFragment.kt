@@ -54,8 +54,8 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
     private val adapter: ScheduleAdapter by lazy {
         ScheduleAdapter(
                 requireContext(),
-                { item, _, position -> onScheduleItemClicked(item, position) },
-                { item, position -> onItemDismissed(item, position) },
+                { item, _ -> onScheduleItemClicked(item) },
+                { item -> onItemDismissed(item, item.day) },
                 weatherResolver,
                 schedulers,
                 coreySettings
@@ -129,7 +129,7 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
         appComponent?.inject(this)
     }
 
-    private fun onScheduleItemClicked(item: ScheduleDay, position: Int) {
+    private fun onScheduleItemClicked(item: ScheduleDay) {
         if (!scheduleRepository.hasDayReachedMaxItems(item)) {
             InsertScheduleDialogFragment.newInstance()
                 .setOnScheduleItemSelectedListener { i ->
@@ -138,10 +138,10 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
                             locationType = i.item.locationType,
                             workoutIconType = i.item.workoutType
                         ),
-                        day = position
+                        day = item.day
                     )
                 }
-                .show(childFragmentManager, "dialogfragment-insert-schedule")
+                .show(childFragmentManager, "dialog-fragment-insert-schedule")
         }
     }
 
