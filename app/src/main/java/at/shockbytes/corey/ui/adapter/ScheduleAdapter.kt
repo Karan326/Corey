@@ -33,7 +33,7 @@ import java.util.Collections
  */
 class ScheduleAdapter(
     context: Context,
-    private val onItemClickedListener: ((item: ScheduleDay, v: View) -> Unit),
+    private val onItemClickedListener: ((item: ScheduleDay, v: View, position: Int) -> Unit),
     private val onItemDismissedListener: ((item: ScheduleDay) -> Unit),
     private val weatherResolver: ScheduleWeatherResolver,
     private val schedulers: SchedulerFacade,
@@ -48,7 +48,10 @@ class ScheduleAdapter(
             for (i in data.size - 1 downTo 0) {
                 deleteEntity(i)
             }
-            fillUpScheduleList(value).forEach { addEntityAtLast(it) }
+            fillUpScheduleList(value)
+                .forEach { scheduleDay ->
+                    addEntityAtLast(scheduleDay)
+                }
         }
 
     init {
@@ -102,42 +105,13 @@ class ScheduleAdapter(
 
     fun updateData(items: List<ScheduleDay>) {
 
-        val filledItems = fillUpScheduleList2(items)
+        val filledItems = fillUpScheduleList(items)
         val diffResult = DiffUtil.calculateDiff(ScheduleItemDiffUtilCallback(data, filledItems))
 
         data.clear()
         data.addAll(filledItems)
 
         diffResult.dispatchUpdatesTo(this)
-    }
-
-    fun insertScheduleItem(item: ScheduleDay) {
-        val location = item.day
-        if (location >= 0) {
-            data[location] = item
-            notifyItemChanged(location)
-        }
-    }
-
-    fun updateScheduleItem(item: ScheduleDay) {
-
-        val oldLocation = getLocation(item)
-        val newLocation = item.day
-        if (newLocation >= 0 && oldLocation != newLocation) {
-            val newLocationItem = data[newLocation]
-            data[newLocation] = item
-            data[oldLocation] = newLocationItem
-            notifyItemChanged(newLocation)
-            notifyItemChanged(oldLocation)
-        }
-    }
-
-    fun resetEntity(item: ScheduleDay) {
-        val location = item.day
-        if (location >= 0) {
-            data[location] = emptyScheduleItem(location)
-            notifyItemChanged(location)
-        }
     }
 
     fun reorderAfterMove(): List<ScheduleDay> {
@@ -150,46 +124,11 @@ class ScheduleAdapter(
     }
 
     private fun fillUpScheduleList(items: List<ScheduleDay>): List<ScheduleDay> {
-
-        val array = arrayOfNulls<ScheduleDay>(MAX_SCHEDULES)
-        // Populate array with all given items
-        items.forEach { array[it.day] = it }
-        // Now add placeholder objects for empty spots
-        (0 until MAX_SCHEDULES).forEach { idx ->
-            if (array[idx] == null) {
-                array[idx] = emptyScheduleItem(idx)
-            }
-        }
-        // Safe to do so, because all nulls are already replaced
-        return array.mapTo(mutableListOf()) { it!! }
-    }
-
-    private fun fillUpScheduleList2(items: List<ScheduleDay>): List<ScheduleDay> {
         val def = Array(MAX_SCHEDULES) { emptyScheduleItem(it) }.toMutableList()
         items.forEach { item ->
             def[item.day] = item
         }
         return def
-    }
-
-    private fun fillUpScheduleList3(items: List<ScheduleDay>): List<ScheduleDay> {
-
-        val array = arrayOfNulls<ScheduleDay>(MAX_SCHEDULES)
-        // Populate array with all given items
-        items.forEach { array[it.day] = it }
-        // Now add placeholder objects for empty spots
-        (0 until MAX_SCHEDULES).forEach { idx ->
-            if (array[idx] == null) {
-
-                if (data[idx].isEmpty) {
-                    array[idx] = data[idx].copy(day = idx)
-                } else {
-                    array[idx] = emptyScheduleItem(idx)
-                }
-            }
-        }
-        // Safe to do so, because all nulls are already replaced
-        return array.mapTo(mutableListOf()) { it!! }
     }
 
     private fun emptyScheduleItem(idx: Int): ScheduleDay = ScheduleDay(day = idx)
@@ -198,21 +137,16 @@ class ScheduleAdapter(
         override val containerView: View
     ) : BaseAdapter<ScheduleDay>.ViewHolder(containerView), LayoutContainer {
 
-        private lateinit var item: ScheduleDay
+        override fun bindToView(t: ScheduleDay) = Unit
 
-        init {
+        fun bind(item: ScheduleDay, position: Int) {
             item_schedule_txt_name.setOnClickListener {
-                onItemClickedListener.invoke(item, itemView)
+                onItemClickedListener.invoke(item, itemView, position)
             }
             item_schedule_btn_clear.setOnClickListener {
                 onItemDismissedListener.invoke(item)
             }
-        }
 
-        override fun bindToView(t: ScheduleDay) = Unit
-
-        fun bind(item: ScheduleDay, position: Int) {
-            this.item = item
             item_schedule_txt_name.text = item.name
 
             if (shouldLoadWeather(item)) {

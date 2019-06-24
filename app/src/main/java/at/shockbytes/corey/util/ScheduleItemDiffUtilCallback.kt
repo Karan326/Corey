@@ -13,7 +13,7 @@ class ScheduleItemDiffUtilCallback(
 ) : DiffUtil.Callback() {
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return oldList[oldItemPosition].id == newList[newItemPosition].id
+        return oldList[oldItemPosition].day == newList[newItemPosition].day
     }
 
     override fun getOldListSize(): Int = oldList.size

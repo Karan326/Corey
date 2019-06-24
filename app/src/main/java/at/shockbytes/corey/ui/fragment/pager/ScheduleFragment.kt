@@ -24,8 +24,6 @@ import at.shockbytes.util.AppUtils
 import at.shockbytes.util.adapter.BaseAdapter
 import at.shockbytes.util.adapter.BaseItemTouchHelper
 import at.shockbytes.util.view.EqualSpaceItemDecoration
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import kotterknife.bindView
 import javax.inject.Inject
 
@@ -54,7 +52,7 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
     private val adapter: ScheduleAdapter by lazy {
         ScheduleAdapter(
                 requireContext(),
-                { item, _ -> onScheduleItemClicked(item) },
+                { item, _, position -> onScheduleItemClicked(item, position) },
                 { item -> onItemDismissed(item, item.day) },
                 weatherResolver,
                 schedulers,
@@ -92,8 +90,8 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
     override fun bindViewModel() {
 
         scheduleRepository.schedule
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(schedulers.io)
+                .observeOn(schedulers.ui)
                 .subscribe({ scheduleItems ->
                     adapter.updateData(scheduleItems)
                 }, { throwable ->
@@ -107,29 +105,29 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
 
     override fun setupViews() {
 
-        context?.let { ctx ->
-
-            recyclerViewDays.layoutManager = recyclerViewLayoutManager
-            recyclerViewDays.adapter = DaysScheduleAdapter(ctx, resources.getStringArray(R.array.days).toList())
-            recyclerViewDays.addItemDecoration(EqualSpaceItemDecoration(AppUtils.convertDpInPixel(4, ctx)))
-
-            recyclerView.layoutManager = recyclerViewLayoutManager
-            recyclerView.isNestedScrollingEnabled = false
-            recyclerView.addItemDecoration(EqualSpaceItemDecoration(AppUtils.convertDpInPixel(4, ctx)))
-            val callback = BaseItemTouchHelper(adapter, false, BaseItemTouchHelper.DragAccess.ALL)
-            adapter.onItemMoveListener = this
-
-            touchHelper = ItemTouchHelper(callback)
-            touchHelper.attachToRecyclerView(recyclerView)
-            recyclerView.adapter = adapter
+        recyclerViewDays.apply {
+            layoutManager = recyclerViewLayoutManager
+            adapter = DaysScheduleAdapter(requireContext(), resources.getStringArray(R.array.days).toList())
+            addItemDecoration(EqualSpaceItemDecoration(AppUtils.convertDpInPixel(4, requireContext())))
         }
+        recyclerView.apply {
+            layoutManager = recyclerViewLayoutManager
+            isNestedScrollingEnabled = false
+            addItemDecoration(EqualSpaceItemDecoration(AppUtils.convertDpInPixel(4, requireContext())))
+        }
+        val callback = BaseItemTouchHelper(adapter, false, BaseItemTouchHelper.DragAccess.ALL)
+        adapter.onItemMoveListener = this
+
+        touchHelper = ItemTouchHelper(callback)
+        touchHelper.attachToRecyclerView(recyclerView)
+        recyclerView.adapter = adapter
     }
 
     override fun injectToGraph(appComponent: AppComponent?) {
         appComponent?.inject(this)
     }
 
-    private fun onScheduleItemClicked(item: ScheduleDay) {
+    private fun onScheduleItemClicked(item: ScheduleDay, position: Int) {
         if (!scheduleRepository.hasDayReachedMaxItems(item)) {
             InsertScheduleDialogFragment.newInstance()
                 .setOnScheduleItemSelectedListener { i ->
@@ -138,7 +136,7 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
                             locationType = i.item.locationType,
                             workoutIconType = i.item.workoutType
                         ),
-                        day = item.day
+                        day = position
                     )
                 }
                 .show(childFragmentManager, "dialog-fragment-insert-schedule")
