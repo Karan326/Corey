@@ -74,7 +74,7 @@ class FirebaseScheduleRepository(
         firebase.getReference("/schedule").child(item.id).setValue(item)
     }
 
-    override fun deleteScheduleItem(item: ScheduleItem) {
+    override fun deleteScheduleDay(item: ScheduleItem) {
         firebase.getReference("/schedule").child(item.id).removeValue()
     }
 

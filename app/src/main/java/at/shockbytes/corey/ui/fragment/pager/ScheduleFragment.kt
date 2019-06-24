@@ -2,9 +2,6 @@ package at.shockbytes.corey.ui.fragment.pager
 
 import android.content.res.Configuration
 import android.os.Bundle
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.ItemTouchHelper
 import android.widget.Toast
 import at.shockbytes.core.scheduler.SchedulerFacade
@@ -78,13 +75,13 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
     override fun onItemMoveFinished() {
         adapter.reorderAfterMove()
                 .forEach { item ->
-                    scheduleRepository.updateScheduleItem(item)
+                    scheduleRepository.updateScheduleDay(item)
                 }
     }
 
     override fun onItemDismissed(t: ScheduleItem, position: Int) {
         if (!t.isEmpty) {
-            scheduleRepository.deleteScheduleItem(t)
+            scheduleRepository.deleteScheduleDay(t)
         }
     }
 
@@ -132,7 +129,7 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
         if (item.isEmpty) {
             InsertScheduleDialogFragment.newInstance()
                     .setOnScheduleItemSelectedListener { i ->
-                        scheduleRepository.insertScheduleItem(
+                        scheduleRepository.insertScheduleItemAtDay(
                             ScheduleItem(i.item.title,
                                 position,
                                 locationType = i.item.locationType,

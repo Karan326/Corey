@@ -1,6 +1,8 @@
 package at.shockbytes.corey.data.schedule
 
 import at.shockbytes.corey.common.core.util.Pokeable
+import at.shockbytes.corey.data.schedule.model.ScheduleDay
+import at.shockbytes.corey.data.schedule.model.ScheduleDayItem
 import io.reactivex.Completable
 import io.reactivex.Observable
 
@@ -10,15 +12,15 @@ import io.reactivex.Observable
  */
 interface ScheduleRepository : Pokeable {
 
-    val schedule: Observable<List<ScheduleItem>>
+    val schedule: Observable<List<ScheduleDay>>
 
     val schedulableItems: Observable<List<SchedulableItem>>
 
-    fun insertScheduleItem(item: ScheduleItem): ScheduleItem
+    fun insertScheduleItemAtDay(dayItem: ScheduleDayItem, day: Int): ScheduleDay
 
-    fun updateScheduleItem(item: ScheduleItem)
+    fun updateScheduleDay(scheduleDay: ScheduleDay)
 
-    fun deleteScheduleItem(item: ScheduleItem)
+    fun deleteScheduleDay(scheduleDay: ScheduleDay)
 
     fun deleteAll(): Completable
 }
