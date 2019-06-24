@@ -130,7 +130,8 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
     }
 
     private fun onScheduleItemClicked(item: ScheduleDay, position: Int) {
-        InsertScheduleDialogFragment.newInstance()
+        if (!scheduleRepository.hasDayReachedMaxItems(item)) {
+            InsertScheduleDialogFragment.newInstance()
                 .setOnScheduleItemSelectedListener { i ->
                     scheduleRepository.insertScheduleItemAtDay(
                         ScheduleDayItem(i.item.title,
@@ -141,6 +142,7 @@ class ScheduleFragment : BaseFragment<AppComponent>(), BaseAdapter.OnItemMoveLis
                     )
                 }
                 .show(childFragmentManager, "dialogfragment-insert-schedule")
+        }
     }
 
     companion object {

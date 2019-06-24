@@ -140,9 +140,14 @@ class FirebaseScheduleRepository(
             override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
                 dataSnapshot.getValue(ScheduleDay::class.java)?.let { changed ->
 
-                    val indexOfChanged = scheduleItems.indexOf(changed)
-                    scheduleItems[indexOfChanged] = changed
-                    scheduleItemSubject.onNext(scheduleItems)
+                    val indexOfChanged = scheduleItems.indexOfFirst {
+                        it.day == changed.day
+                    }
+
+                    if (indexOfChanged > -1) {
+                        scheduleItems[indexOfChanged] = changed
+                        scheduleItemSubject.onNext(scheduleItems)
+                    }
                 }
             }
 

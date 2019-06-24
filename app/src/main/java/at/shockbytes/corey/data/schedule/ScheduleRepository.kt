@@ -23,4 +23,13 @@ interface ScheduleRepository : Pokeable {
     fun deleteScheduleDay(scheduleDay: ScheduleDay)
 
     fun deleteAll(): Completable
+
+    fun hasDayReachedMaxItems(item: ScheduleDay): Boolean {
+        return item.itemSize >= MAX_DAY_ITEMS
+    }
+
+    companion object {
+
+        private const val MAX_DAY_ITEMS = 2
+    }
 }

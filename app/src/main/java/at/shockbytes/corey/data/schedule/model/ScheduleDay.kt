@@ -21,8 +21,12 @@ data class ScheduleDay(
     val icons: List<WorkoutIconType>
         get() = items.map { it.workoutIconType }
 
-
     @get:Exclude
     val notificationWorkoutIcon: WorkoutIconType
         get() = items.first().workoutIconType
+
+    @get:Exclude
+    val itemSize: Int
+        get() = items.size
+
 }
